@@ -153,6 +153,274 @@ void checkSquareCondition(double x_cordinate, double y_cordinate, double z_cordi
     }
 }
 
+
+
+void getAdjecentSquareCentroids(double x_cordinate,double y_cordinate, double z_cordinate, double box_dimension,struct Graph_Node *node){
+    struct Graph_Node *current_node= node;
+
+    printf("start cordinate %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
+    double front_x = x_cordinate + box_dimension;
+    double front_y = y_cordinate;
+    
+    if(!found_nodes.hasValue(front_x,front_y,z_cordinate)){
+        if(!occupied_points.hasValue(front_x,front_y,z_cordinate)){
+            //
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = front_x;
+            temp_node->y_cordinate = front_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(front_x,front_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",front_x,front_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(front_x,front_y,z_cordinate)){
+            // return;
+            
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(front_x,front_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",front_x,front_y,z_cordinate);  
+        }
+    }
+    
+    double front_left_x = x_cordinate + box_dimension;
+    double front_left_y = y_cordinate + box_dimension;
+    
+    if(!found_nodes.hasValue(front_left_x,front_left_y,z_cordinate)){
+        if(!occupied_points.hasValue(front_left_x,front_left_y,z_cordinate)){
+
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = front_left_x;
+            temp_node->y_cordinate = front_left_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(front_left_x,front_left_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",front_left_x,front_left_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(front_left_x,front_left_y,z_cordinate)){
+            // return;
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(front_left_x,front_left_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",front_left_x,front_left_y,z_cordinate);
+        }
+    }
+
+    double left_x = x_cordinate;
+    double left_y = y_cordinate + box_dimension;
+    
+    if(!found_nodes.hasValue(left_x,left_y,z_cordinate)){
+        if(!occupied_points.hasValue(left_x,left_y,z_cordinate)){
+
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = left_x;
+            temp_node->y_cordinate = left_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(left_x,left_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",left_x,left_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(left_x,left_y,z_cordinate)){
+            // return;
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(left_x,left_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",left_x,left_y,z_cordinate);
+        }
+    }
+
+    double back_left_x = x_cordinate - box_dimension;
+    double back_left_y = y_cordinate + box_dimension;
+    
+    if(!found_nodes.hasValue(back_left_x,back_left_y,z_cordinate)){
+        if(!occupied_points.hasValue(back_left_x,back_left_y,z_cordinate)){
+
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = back_left_x;
+            temp_node->y_cordinate = back_left_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(back_left_x,back_left_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",back_left_x,back_left_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(back_left_x,back_left_y,z_cordinate)){
+            // return;
+        }else{
+           struct Graph_Node *available_node = found_nodes.getValue(back_left_x,back_left_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",back_left_x,back_left_y,z_cordinate); 
+        }
+    }
+
+    double back_x = x_cordinate - box_dimension;
+    double back_y = y_cordinate;
+    
+    if(!found_nodes.hasValue(back_x,back_y,z_cordinate)){
+        if(!occupied_points.hasValue(back_x,back_y,z_cordinate)){
+             
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = back_x;
+            temp_node->y_cordinate = back_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(back_x,back_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",back_x,back_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(back_x,back_y,z_cordinate)){
+            // return;
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(back_x,back_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",back_x,back_y,z_cordinate);
+        }
+    }
+
+    double back_right_x = x_cordinate - box_dimension;
+    double back_right_y = y_cordinate - box_dimension;
+    
+    if(!found_nodes.hasValue(back_right_x,back_right_y,z_cordinate)){
+        if(!occupied_points.hasValue(back_right_x,back_right_y,z_cordinate)){
+
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = back_right_x;
+            temp_node->y_cordinate = back_right_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(back_right_x,back_right_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",back_right_x,back_right_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(back_right_x,back_right_y,z_cordinate)){
+            // return;
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(back_right_x,back_right_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",back_right_x,back_right_y,z_cordinate);
+        }
+    }
+
+    double right_x = x_cordinate;
+    double right_y = y_cordinate - box_dimension;
+    
+    if(!found_nodes.hasValue(right_x,right_y,z_cordinate)){
+        if(!occupied_points.hasValue(right_x,right_y,z_cordinate)){
+
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = right_x;
+            temp_node->y_cordinate = right_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(right_x,right_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",right_x,right_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(right_x,right_y,z_cordinate)){
+            // return;
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(right_x,right_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",right_x,right_y,z_cordinate);  
+        }
+    }
+
+    double front_right_x = x_cordinate + box_dimension;
+    double front_right_y = y_cordinate - box_dimension;
+    
+    if(!found_nodes.hasValue(front_right_x,front_right_y,z_cordinate)){
+        if(!occupied_points.hasValue(front_right_x,front_right_y,z_cordinate)){
+
+        }else{
+            struct Graph_Node *temp_node = new Graph_Node;
+            temp_node->x_cordinate = front_right_x;
+            temp_node->y_cordinate = front_right_y;
+            temp_node->z_cordinate = z_cordinate;
+            temp_node->path_cost = current_node->path_cost + 1;
+            temp_node->predecessor = current_node;
+            temp_node->priority = 0.0;
+            found_nodes.setValue(front_right_x,front_right_y,z_cordinate,temp_node);
+            node_queue.push(temp_node);
+            printf("( %f %f %f )\n",front_right_x,front_right_y,z_cordinate);
+        }
+    }else{
+        if(!occupied_points.hasValue(front_right_x,front_right_y,z_cordinate)){
+            // return;
+        }else{
+            struct Graph_Node *available_node = found_nodes.getValue(front_right_x,front_right_y,z_cordinate);
+            if(available_node->path_cost>current_node->path_cost+1){
+                available_node->path_cost = current_node->path_cost + 1;
+                available_node->predecessor = current_node;
+                available_node->priority = 0.0;
+            }
+            printf("( %f %f %f )\n",front_right_x,front_right_y,z_cordinate);
+        }
+    }
+    struct Graph_Node *next_node = node_queue.front();
+    node_queue.pop();
+    printf("End One Round\n");
+    getAdjecentSquareCentroids(next_node->x_cordinate,next_node->y_cordinate,next_node->z_cordinate,box_dimension,next_node);
+}
+
 void initialize_first_node(double x_cordinate,double y_cordinate, double z_cordinate){
     struct Graph_Node *temp_node = new Graph_Node;
     temp_node->x_cordinate = x_cordinate;
@@ -162,220 +430,7 @@ void initialize_first_node(double x_cordinate,double y_cordinate, double z_cordi
     temp_node->predecessor = NULL;
     temp_node->priority = 0.0;
     start_node = temp_node;
-}
-
-void getAdjecentSquareCentroids(double x_cordinate,double y_cordinate, double z_cordinate, double box_dimension,struct Graph_Node *node){
-    struct Graph_Node *current_node= node;
-
-    double front_x = x_cordinate + box_dimension;
-    double front_y = y_cordinate;
-   
-    if(!found_nodes.hasValue(front_x,front_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = front_x;
-        temp_node->y_cordinate = front_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(front_x,front_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(front_x,front_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(front_x,front_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }   
-        }
-    }
-    
-    double front_left_x = x_cordinate + box_dimension;
-    double front_left_y = y_cordinate + box_dimension;
-    
-    if(!found_nodes.hasValue(front_left_x,front_left_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = front_left_x;
-        temp_node->y_cordinate = front_left_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(front_left_x,front_left_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(front_left_x,front_left_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(front_left_x,front_left_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }
-        }
-    }
-
-    double left_x = x_cordinate;
-    double left_y = y_cordinate + box_dimension;
-    
-    if(!found_nodes.hasValue(left_x,left_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = left_x;
-        temp_node->y_cordinate = left_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(left_x,left_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(left_x,left_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(left_x,left_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }
-        }
-    }
-
-    double back_left_x = x_cordinate - box_dimension;
-    double back_left_y = y_cordinate + box_dimension;
-    
-    if(!found_nodes.hasValue(back_left_x,back_left_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = back_left_x;
-        temp_node->y_cordinate = back_left_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(back_left_x,back_left_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(back_left_x,back_left_y,z_cordinate)){
-            return;
-        }else{
-           struct Graph_Node *available_node = found_nodes.getValue(back_left_x,back_left_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            } 
-        }
-    }
-
-    double back_x = x_cordinate - box_dimension;
-    double back_y = y_cordinate;
-    
-    if(!found_nodes.hasValue(back_x,back_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = back_x;
-        temp_node->y_cordinate = back_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(back_x,back_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(back_x,back_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(back_x,back_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }
-        }
-    }
-
-    double back_right_x = x_cordinate - box_dimension;
-    double back_right_y = y_cordinate - box_dimension;
-    
-    if(!found_nodes.hasValue(back_right_x,back_right_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = back_right_x;
-        temp_node->y_cordinate = back_right_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(back_right_x,back_right_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(back_right_x,back_right_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(back_right_x,back_right_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }
-        }
-    }
-
-    double right_x = x_cordinate;
-    double right_y = y_cordinate - box_dimension;
-    
-    if(!found_nodes.hasValue(right_x,right_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = right_x;
-        temp_node->y_cordinate = right_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(right_x,right_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(right_x,right_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(right_x,right_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }  
-        }
-    }
-
-    double front_right_x = x_cordinate + box_dimension;
-    double front_right_y = y_cordinate - box_dimension;
-    
-    if(!found_nodes.hasValue(front_right_x,front_right_y,z_cordinate)){
-        struct Graph_Node *temp_node = new Graph_Node;
-        temp_node->x_cordinate = front_right_x;
-        temp_node->y_cordinate = front_right_y;
-        temp_node->z_cordinate = z_cordinate;
-        temp_node->path_cost = current_node->path_cost + 1;
-        temp_node->predecessor = current_node;
-        temp_node->priority = 0.0;
-        found_nodes.setValue(front_right_x,front_right_y,z_cordinate,temp_node);
-        node_queue.push(temp_node);
-    }else{
-        if(!occupied_points.hasValue(front_right_x,front_right_y,z_cordinate)){
-            return;
-        }else{
-            struct Graph_Node *available_node = found_nodes.getValue(front_right_x,front_right_y,z_cordinate);
-            if(available_node->path_cost>current_node->path_cost+1){
-                available_node->path_cost = current_node->path_cost + 1;
-                available_node->predecessor = current_node;
-                available_node->priority = 0.0;
-            }
-        }
-    }
-    struct Graph_Node *next_node;// = node_queue.pop();
-    getAdjecentSquareCentroids(next_node->x_cordinate,next_node->y_cordinate,next_node->z_cordinate,box_dimension,next_node);
+    getAdjecentSquareCentroids(x_cordinate,y_cordinate,z_cordinate,0.05,start_node);
 }
 
 void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
@@ -390,6 +445,7 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
         if(it->getValue()>0){
             if(!occupied_points.hasValue(point_x,point_y,point_z)){
                 occupied_points.setValue(point_x,point_y,point_z,1);
+                printf("( %f %f %f )\n",point_x,point_y,point_z);
             }
             count = count+1;
         }else{
@@ -398,7 +454,8 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
             }
         }
     }
-    printf("%f\n",count);
+    //printf("%f\n",count);
+    initialize_first_node(0.025000,1.425000,0.025000);
     // std::cout<<"VOLUME::::"<<v<<endl;
 
 
@@ -411,7 +468,7 @@ int main (int argc, char** argv) {
     ros::Rate loop_rate(10);
     ros::Subscriber subscriber_node;
     // subscriber_node = node_handler.subscribe<PointCloud>("/octomap_point_cloud_centers", 100, point_cloud_subscriber);
-    subscriber_node = node_handler.subscribe("/octomap_full", 100, retrieveDataFromOctomap);
+    subscriber_node = node_handler.subscribe("/octomap_full", 10000, retrieveDataFromOctomap);
     // subscriber_node = node_handler.subscribe("/odom", 1, update_odometry_data);
 
     ros::spin();   
