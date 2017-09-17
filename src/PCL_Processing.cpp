@@ -135,7 +135,14 @@ void clearVariables(){
     // node_queue = NULL;
 }
 
-void checkSquareCondition(double x_cordinate, double y_cordinate, double z_cordinate, double box_dimension){
+/*
+ * Function to check square condition (traversable/untraversable)
+ * retunr value status
+ * -1 -undiscovered
+ *  0 -untraversable
+ *  1 -traversable
+ */
+int checkSquareCondition(double x_cordinate, double y_cordinate, double z_cordinate, double box_dimension){
     double start_x = x_cordinate - box_dimension/2;
     double end_x = x_cordinate + box_dimension/2;
     double start_y = y_cordinate - box_dimension/2;
@@ -143,14 +150,67 @@ void checkSquareCondition(double x_cordinate, double y_cordinate, double z_cordi
     double start_z = z_cordinate - box_dimension/2;
     double end_z = z_cordinate + box_dimension/2;
 
-    double i,j,k;
-    for(i=start_x;i<=end_x;i++){
-        for(j=start_y;j<=end_y;j++){
-            for(k=start_z;j<=end_z;k++){
+    double max_height_cahnge = box_dimension/2;
+    double unit_length = 0.0025;
+    double max_height;
+    double min_height;
+    double height;
+    double average_height;
+    double previous_average_height;
     
+    bool plane_exsist;
+    bool plane_ok;
+    bool column_free;
+
+    double i,j,k;
+
+    previous_average_height =0;
+
+    for(i=start_x;i<=end_x;i=i+unit_length){
+
+        max_height = 0;
+        min_height = box_dimension; 
+        average_height = 0;
+
+        for(j=start_y;j<=end_y;j=j+unit_length){
+
+            //column_free = false;
+            height =0;
+
+            for(k=start_z;j<=end_z;k=k+unit_length){
+                if(occupied_points.hasValue(i,j,k)){
+                    if(occupied_points.getValue(i,j,k)>0){
+                        height+=unit_length;
+                    } else {
+                        //column_free = true;
+                        break;
+                    }
+                }
+                else{
+                    return -1;
+                }
+            }
+
+            if(min_height>height)   min_height=height;
+            if(max_height<height)   max_height=height;
+            average_height+=height;
+        
+        }
+
+        average_height = average_height/((end_y-start_y)/unit_length);
+        
+        if(i!=start_x){
+            if((average_height-previous_average_height)>max_height_cahnge){
+                return 0;
             }
         }
-    }
+
+        previous_average_height = average_height;
+
+    } 
+    
+    return 1;
+        
 }
 
 
@@ -472,5 +532,5 @@ int main (int argc, char** argv) {
     // subscriber_node = node_handler.subscribe("/odom", 1, update_odometry_data);
 
     ros::spin();   
- }
+}
 
