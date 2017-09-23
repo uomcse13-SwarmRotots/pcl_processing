@@ -1,144 +1,14 @@
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <math.h>
+#include "navigation_planner.h"
 
-#include <octomap/OcTree.h>
+NavigationPlanner::NavigationPlanner(ros::NodeHandle &nh, std::string topic){
+    node_handle_ = nh;
+    topic_ = topic;
 
-#include <bitset>
-#include <map>
-#include <iostream>
-#include <ros/ros.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
-#include <boost/foreach.hpp>
-#include <tf/transform_datatypes.h>
-#include <nav_msgs/Odometry.h>
-#include <tf/tf.h>
-#include <geometry_msgs/Twist.h>
-#include <geometry_msgs/Pose.h>
-#include <tf/transform_datatypes.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-#include <queue>
-
-#include <octomap_msgs/conversions.h>
-#include <octomap/octomap.h>
-#include <fstream>
-
-#include <pcl/point_cloud.h>
-#include <pcl/octree/octree_search.h>
-
-#include <iostream>
-#include <vector>
-#include <ctime>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <octomap_msgs/GetOctomap.h>
-#include <algorithm>
-
-#include <boost/lambda/lambda.hpp>  // _1
-#include <boost/lambda/bind.hpp>    // bind()
-#include <boost/tuple/tuple_io.hpp>
-#include <octomap/octomap.h>
-#include <octomap/OcTree.h>
-#include<octomap/OcTreeBase.h>
-
-const float  PI_F=3.14159265358979f;
-
-namespace {
-  typedef float coord_t;
-  typedef boost::tuple<coord_t,coord_t,coord_t> point_t;
-
-  coord_t distance_sq(const point_t& a, const point_t& b) { // or boost::geometry::distance
-    coord_t x = a.get<0>() - b.get<0>();
-    coord_t y = a.get<1>() - b.get<1>();
-    coord_t z = a.get<2>() - b.get<2>();
-    return x*x + y*y + z*z;
-  }
 }
 
-using octomap_msgs::GetOctomap;
-using namespace std;
-using namespace octomap;
-pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+NavigationPlanner::~NavigationPlanner(){}
 
-using namespace boost::lambda; // _1, _2, bind()
-vector<point_t> points;
-
-struct MapIndex{
-    float x, y, z;
-    MapIndex()
-    :x(0), y(0), z(0){
-    }
-    MapIndex(float x_, float y_, float z_)
-    :x(x_), y(y_), z(z_){
-    }
-};
-
-bool operator<(const MapIndex &v1, const MapIndex &v2){
-    if (v1.z > v2.z)
-        return false;
-    if (v1.z < v2.z)
-        return true;
-    if (v1.y > v2.y)
-        return false;
-    if (v1.y < v2.y)
-        return true;
-    if (v1.x < v2.x)
-        return true;
-    return false;
-}
-
-template<typename Val> struct Array3D{
-    typedef std::map<MapIndex, Val> Data;
-    Data data;
-    Val defaultValue;
-    const Val& getValue(float x, float y, float z) const{
-        MapIndex index(x, y, z);
-        typename Data::const_iterator found = data.find(index);
-        if (found == data.end())
-            return defaultValue;
-        return found->second;
-    }
-    void setValue(float x, float y, float z, const Val &val){
-        data.insert(std::make_pair(MapIndex(x, y, z), val));
-    }
-    bool hasValue(float x, float y, float z) const{
-        typename Data::const_iterator found = data.find(MapIndex(x, y, z));
-        return found != data.end();
-    }
-    Array3D(const Val& defaultValue_ = Val())
-    :defaultValue(defaultValue_){
-    }
-};
-
-Array3D<float> occupied_points;
-Array3D<float> checked_points;
-
-struct Graph_Node{
-    float x_cordinate;
-    float y_cordinate;
-    float z_cordinate;
-    Graph_Node *predecessor;
-    int path_cost;
-    float priority;
-};
-
-struct Graph_Node *start_node;
-struct Graph_Node *end_node;
-Array3D<struct Graph_Node*> found_nodes;
-queue<struct Graph_Node*> node_queue;
-
-struct Graph_Node *breadth_array_free_cells[1000];
-int breadth_array_free_cells_size;
-
-float starting_cordinate_x;
-float starting_cordinate_y;
-float starting_cordinate_z;
-float current_yaw_angle;
-
-inline float round(float val){
+inline float NavigationPlanner::round(float val){
     val=val*1000;
     if(val<0){
         return ceil(val-0.5)/1000;
@@ -146,7 +16,7 @@ inline float round(float val){
     return floor(val+0.5)/1000;
 }
 
-void clearVariables(){
+void NavigationPlanner::clearVariables(){
     found_nodes = NULL;
     // node_queue = NULL;
 }
@@ -160,7 +30,7 @@ void clearVariables(){
  */
 
 
-int checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate, float box_dimension){
+int NavigationPlanner::checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate, float box_dimension){
     float start_x = x_cordinate - box_dimension/2;
     float end_x = x_cordinate + box_dimension/2;
     float start_y = y_cordinate - box_dimension/2;
@@ -218,19 +88,19 @@ int checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate
         
 }
 
-void convert_odom_angle_to_radians(float yaw_in_radians){
+void NavigationPlanner::convert_odom_angle_to_radians(float yaw_in_radians){
     if(yaw_in_radians<0){
         yaw_in_radians = 360 - abs(yaw_in_radians)*180/PI_F;
     }
     current_yaw_angle = yaw_in_radians;
 }
 
-double get_turning_angle_between_two_points(double start_x_cordinate,double start_y_cordinate, double end_x_cordinate, double end_y_cordinate){
+double NavigationPlanner::get_turning_angle_between_two_points(double start_x_cordinate,double start_y_cordinate, double end_x_cordinate, double end_y_cordinate){
     float angle_between_points = atan2(end_y_cordinate - start_y_cordinate, end_x_cordinate - start_x_cordinate)*180/PI_F;
     return angle_between_points;
 }
 
-double calculate_weight_to_the_point(struct Graph_Node *temp_current_node){
+double NavigationPlanner::calculate_weight_to_the_point(struct Graph_Node *temp_current_node){
     float rotation = 0;
     float distance = 0;
     while(temp_current_node != NULL){
@@ -245,7 +115,7 @@ double calculate_weight_to_the_point(struct Graph_Node *temp_current_node){
     }
 }
 
-void set_publish_end_point(double x_cordinate, double y_cordinate, double z_cordinate){
+void NavigationPlanner::set_publish_end_point(double x_cordinate, double y_cordinate, double z_cordinate){
     printf("ending cordinates are = %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
 //     ros::init(argc, argv, "target_point_publisher");
 //     ros::NodeHandle n;
@@ -257,7 +127,7 @@ void set_publish_end_point(double x_cordinate, double y_cordinate, double z_cord
 //     while (ros::ok())  {
 //         std_msgs::String msg;
 //         std::stringstream ss;
-//         ss << std::to_string(x_cordinate) + std::to_string(y_cordinate) + std::to_string(z_cordinate)<< count;
+//         ss << x_cordinate) + y_cordinate) + z_cordinate)<< count;
 //         msg.data = ss.str();
 //         ROS_INFO("%s", msg.data.c_str());
 //         chatter_pub.publish(msg);
@@ -268,7 +138,7 @@ void set_publish_end_point(double x_cordinate, double y_cordinate, double z_cord
 //   return 0;
 }
 
-void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cordinate, float box_dimension,struct Graph_Node *node){
+void NavigationPlanner::getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cordinate, float box_dimension,struct Graph_Node *node){
     struct Graph_Node *current_node= node;
 
     printf("start cordinate %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
@@ -647,7 +517,7 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
         }
 
         struct Graph_Node *minimum_cost_node = breadth_array_free_cells[minimum_position];
-        
+        printf("free_cells\n");
         for (i=0; i < breadth_array_free_cells_size;i++ ) {
             delete breadth_array_free_cells[i];
         }
@@ -661,7 +531,7 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     }    
 }
 
-void initialize_first_node(float x_cordinate,float y_cordinate, float z_cordinate){
+void NavigationPlanner::initialize_first_node(float x_cordinate,float y_cordinate, float z_cordinate){
     struct Graph_Node *temp_node = new Graph_Node;
     temp_node->x_cordinate = x_cordinate;
     temp_node->y_cordinate = y_cordinate;
@@ -673,7 +543,56 @@ void initialize_first_node(float x_cordinate,float y_cordinate, float z_cordinat
     getAdjecentSquareCentroids(x_cordinate,y_cordinate,z_cordinate,0.500000,start_node);
 }
 
-void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
+int **NavigationPlanner::check_neighbourhood(const geometry_msgs::PoseStamped& pose, float box_dimension){
+    float x_cordinate = pose.pose.position.x;
+    float y_cordinate = pose.pose.position.y;
+    float z_cordinate = pose.pose.position.z;
+
+    int** array = 0;
+    array = new int*[3];
+    for (int h = 0; h < 3; h++){
+        array[h] = new int[3];
+        for (int w = 0; w < 3; w++){
+                array[h][w] = 0;
+        }
+    }
+
+    float front_x = round(x_cordinate + box_dimension);
+    float front_y = round(y_cordinate);
+    array[1][2] = checkSquareCondition(front_x,front_y,z_cordinate,box_dimension);
+
+    float front_left_x = round(x_cordinate + box_dimension);
+    float front_left_y = round(y_cordinate + box_dimension);
+    array[0][2] = checkSquareCondition(front_left_x,front_left_y,z_cordinate,box_dimension);
+
+    float left_x = round(x_cordinate);
+    float left_y = round(y_cordinate + box_dimension);
+    array[0][1] = checkSquareCondition(left_x,left_y,z_cordinate,box_dimension);
+    
+    float back_left_x = round(x_cordinate - box_dimension);
+    float back_left_y = round(y_cordinate + box_dimension);
+    array[0][0] = checkSquareCondition(back_left_x,back_left_y,z_cordinate,box_dimension);
+    
+    float back_x = round(x_cordinate - box_dimension);
+    float back_y = round(y_cordinate);
+    array[1][0] = checkSquareCondition(back_x,back_y,z_cordinate,box_dimension);
+    
+    float back_right_x = round(x_cordinate - box_dimension);
+    float back_right_y = round(y_cordinate - box_dimension);
+    array[2][0] = checkSquareCondition(back_right_x,back_right_y,z_cordinate,box_dimension);
+    
+    float right_x = round(x_cordinate);
+    float right_y = round(y_cordinate - box_dimension);
+    array[2][1] = checkSquareCondition(right_x,right_y,z_cordinate,box_dimension);
+    
+    float front_right_x = round(x_cordinate + box_dimension);
+    float front_right_y = round(y_cordinate - box_dimension);
+    array[2][2] = checkSquareCondition(front_right_x,front_right_y,z_cordinate,box_dimension);
+    
+    return array;
+}
+
+void NavigationPlanner::retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
     AbstractOcTree* tree = msgToMap(*msg);
     OcTree* octree = dynamic_cast<OcTree*>(tree); 
 
@@ -685,7 +604,7 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
         if(it->getValue()>0){
             if(!occupied_points.hasValue(point_x,point_y,point_z)){
                 occupied_points.setValue(point_x,point_y,point_z,1);
-                printf("( %f %f %f )\n",point_x,point_y,point_z);
+                // printf("( %f %f %f )\n",point_x,point_y,point_z);
             }
             count = count+1;
         }else{
@@ -695,18 +614,20 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
         }
         
     }
-    initialize_first_node(3.825000,1.625000,-0.025000);
+    // initialize_first_node(0.675000,4.725000,0.025000);
 }
 
-int main (int argc, char** argv) {
-    ros::init (argc, argv, "cloud_sub");
-    ros::NodeHandle node_handler;
-    ros::Rate loop_rate(1000);
-    ros::Subscriber subscriber_node;
-    // subscriber_node = node_handler.subscribe<PointCloud>("/octomap_point_cloud_centers", 100, point_cloud_subscriber);
-    subscriber_node = node_handler.subscribe("/octomap_full", 10000, retrieveDataFromOctomap);
-    // subscriber_node = node_handler.subscribe("/odom", 1, update_odometry_data);
+void NavigationPlanner::neighbourhood_callback(const geometry_msgs::PoseStamped& pose){
+    int **return_data = check_neighbourhood(pose,0.5);
+    int i=0,j=0;
+    for(i;i<3;i++){
+        for(j;j<3;j++){
+            ROS_INFO("Point %d %d value = %d",i,j,return_data[i][j]);
+        }
+    }    
+}
 
-    ros::spin();   
- }
-
+void NavigationPlanner::start(){
+    subscriber_node = node_handle_.subscribe(topic_, 1000, &NavigationPlanner::retrieveDataFromOctomap,this);
+    ros::spin();
+}
