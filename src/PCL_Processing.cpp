@@ -647,12 +647,12 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
 
         struct Graph_Node *minimum_cost_node = breadth_array[minimum_position];
         
-        for (i=0; i <= breadth_array_size;i++ ) {
+        for (i=0; i < breadth_array_size;i++ ) {
             delete breadth_array[i];
         }
         breadth_array_size = 0;
         printf("deleted\n");
-        while(minimum_cost_node->predecessor != NULL){
+        while(minimum_cost_node != NULL){
             printf("Node Traversed = %f %f %f )\n",minimum_cost_node->x_cordinate,minimum_cost_node->y_cordinate,minimum_cost_node->z_cordinate);
             minimum_cost_node=minimum_cost_node->predecessor;
         } 
@@ -684,7 +684,7 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
         if(it->getValue()>0){
             if(!occupied_points.hasValue(point_x,point_y,point_z)){
                 occupied_points.setValue(point_x,point_y,point_z,1);
-                // printf("( %f %f %f )\n",point_x,point_y,point_z);
+                printf("( %f %f %f )\n",point_x,point_y,point_z);
             }
             count = count+1;
         }else{
@@ -695,7 +695,7 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
         
     }
     //printf("%f\n",count);
-    initialize_first_node(1.375000,2.825000,0.025000);
+    initialize_first_node(3.825000,1.625000,-0.025000);
     // std::cout<<"VOLUME::::"<<v<<endl;
 }
 
