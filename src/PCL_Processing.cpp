@@ -43,6 +43,8 @@
 #include <octomap/OcTree.h>
 #include<octomap/OcTreeBase.h>
 
+const float  PI_F=3.14159265358979f;
+
 using namespace octomap;
 
 namespace {
@@ -130,12 +132,13 @@ struct Graph_Node *end_node;
 Array3D<struct Graph_Node*> found_nodes;
 queue<struct Graph_Node*> node_queue;
 
-struct Graph_Node *breadth_array[1000];
-int breadth_array_size;
+struct Graph_Node *breadth_array_free_cells[1000];
+int breadth_array_free_cells_size;
 
 float starting_cordinate_x;
 float starting_cordinate_y;
 float starting_cordinate_z;
+float current_yaw_angle;
 
 inline float round(float val){
     val=val*1000;
@@ -217,14 +220,59 @@ int checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate
         
 }
 
+void convert_odom_angle_to_radians(float yaw_in_radians){
+    if(yaw_in_radians<0){
+        yaw_in_radians = 360 - abs(yaw_in_radians)*180/PI_F;
+    }
+    current_yaw_angle = yaw_in_radians;
+}
+
+double get_turning_angle_between_two_points(double start_x_cordinate,double start_y_cordinate, double end_x_cordinate, double end_y_cordinate){
+    float angle_between_points = atan2(end_y_cordinate - start_y_cordinate, end_x_cordinate - start_x_cordinate)*180/PI_F;
+    return angle_between_points;
+}
+
+double calculate_weight_to_the_point(struct Graph_Node *temp_current_node){
+    float rotation = 0;
+    float distance = 0;
+    while(temp_current_node != NULL){
+        if(temp_current_node->predecessor!=NULL & temp_current_node->predecessor->predecessor==NULL ){
+            rotation = rotation + abs(current_yaw_angle - get_turning_angle_between_two_points(temp_current_node->x_cordinate,temp_current_node->y_cordinate,temp_current_node->predecessor->x_cordinate,temp_current_node->predecessor->y_cordinate));
+            distance = distance + 1;
+            return rotation*100+distance*1000;//,distance
+        }else{
+            rotation = rotation + abs(get_turning_angle_between_two_points(temp_current_node->x_cordinate,temp_current_node->y_cordinate,temp_current_node->predecessor->x_cordinate,temp_current_node->predecessor->y_cordinate));
+            distance = distance + 1;
+        }    
+    }
+}
+
 void set_publish_end_point(double x_cordinate, double y_cordinate, double z_cordinate){
     printf("ending cordinates are = %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
+//     ros::init(argc, argv, "target_point_publisher");
+//     ros::NodeHandle n;
+//     ros::Publisher chatter_pub = n.advertise<std_msgs::String>("target_publisher", 1000);
+
+//     ros::Rate loop_rate(10);
+
+//     int count = 0;
+//     while (ros::ok())  {
+//         std_msgs::String msg;
+//         std::stringstream ss;
+//         ss << std::to_string(x_cordinate) + std::to_string(y_cordinate) + std::to_string(z_cordinate)<< count;
+//         msg.data = ss.str();
+//         ROS_INFO("%s", msg.data.c_str());
+//         chatter_pub.publish(msg);
+//         ros::spinOnce();
+//         loop_rate.sleep();
+//         ++count;
+//   }
+//   return 0;
 }
 
 void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cordinate, float box_dimension,struct Graph_Node *node){
     struct Graph_Node *current_node= node;
 
- 
     printf("start cordinate %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
     if(!found_nodes.hasValue(x_cordinate,y_cordinate,z_cordinate)){
         found_nodes.setValue(x_cordinate,y_cordinate,z_cordinate,current_node);
@@ -242,8 +290,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = front_x;
@@ -261,8 +309,7 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
         }
     }else{
         if(!occupied_points.hasValue(front_x,front_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",front_x,front_y,z_cordinate);
-            //return;
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(front_x,front_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
@@ -270,7 +317,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
             }
-            ////printf("( updated %f %f %f )\n",front_x,front_y,z_cordinate);  
         }
     }
     
@@ -279,8 +325,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(front_left_x,front_left_y,z_cordinate)){
         if(!occupied_points.hasValue(front_left_x,front_left_y,z_cordinate)){
-            
-            // occupied_points.setValue(front_left_x,front_left_y,z_cordinate,0);
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = front_left_x;
             temp_node->y_cordinate = front_left_y;
@@ -288,8 +332,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1: %f %f %f )\n",front_left_x,front_left_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -308,8 +352,7 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
         }
     }else{
         if(!occupied_points.hasValue(front_left_x,front_left_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",front_left_x,front_left_y,z_cordinate);
-            //return;
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(front_left_x,front_left_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
@@ -317,7 +360,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
             }
-            ////printf("( updated %f %f %f )\n",front_left_x,front_left_y,z_cordinate);
         }
     }
 
@@ -326,8 +368,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(left_x,left_y,z_cordinate)){
         if(!occupied_points.hasValue(left_x,left_y,z_cordinate)){
-            
-            //return;
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = left_x;
             temp_node->y_cordinate = left_y;
@@ -335,9 +375,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            // found_nodes.setValue(left_x,left_y,z_cordinate,temp_node);
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1: %f %f %f )\n",left_x,left_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -351,13 +390,11 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             // int traversable = checkSquareCondition(left_x,left_y,z_cordinate,0.5);
             // if(traversable){
                 node_queue.push(temp_node);
-                //printf("( %f %f %f )\n",left_x,left_y,z_cordinate);
             // } 
         }
     }else{
         if(!occupied_points.hasValue(left_x,left_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",left_x,left_y,z_cordinate);
-            //return;
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(left_x,left_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
@@ -365,7 +402,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
             }
-            ////printf("( updated %f %f %f )\n",left_x,left_y,z_cordinate);
         }
     }
 
@@ -374,8 +410,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(back_left_x,back_left_y,z_cordinate)){
         if(!occupied_points.hasValue(back_left_x,back_left_y,z_cordinate)){
-            
-            //return;
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = back_left_x;
             temp_node->y_cordinate = back_left_y;
@@ -383,8 +417,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1: %f %f %f )\n",back_left_x,back_left_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -398,21 +432,18 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             // int traversable = checkSquareCondition(back_left_x,back_left_y,z_cordinate,0.5);
             // if(traversable){
                 node_queue.push(temp_node);
-                //printf("( %f %f %f )\n",back_left_x,back_left_y,z_cordinate);
             // } 
         }
     }else{
         if(!occupied_points.hasValue(back_left_x,back_left_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",back_left_x,back_left_y,z_cordinate);
-            //return;
+
         }else{
         struct Graph_Node *available_node = found_nodes.getValue(back_left_x,back_left_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
                 available_node->path_cost = current_node->path_cost + 1;
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
-            }
-            ////printf("( updated %f %f %f )\n",back_left_x,back_left_y,z_cordinate); 
+            } 
         }
     }
 
@@ -421,8 +452,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(back_x,back_y,z_cordinate)){
         if(!occupied_points.hasValue(back_x,back_y,z_cordinate)){
-            
-            //return;
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = back_x;
             temp_node->y_cordinate = back_y;
@@ -430,8 +459,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1: %f %f %f )\n",back_x,back_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -450,9 +479,7 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
         }
     }else{
         if(!occupied_points.hasValue(back_x,back_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",back_x,back_y,z_cordinate);
-            //return;
-            
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(back_x,back_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
@@ -460,7 +487,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
             }
-            // //printf("( updated  %f %f %f )\n",back_x,back_y,z_cordinate);
         }
     }
 
@@ -469,8 +495,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(back_right_x,back_right_y,z_cordinate)){
         if(!occupied_points.hasValue(back_right_x,back_right_y,z_cordinate)){
-            
-            //return;
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = back_right_x;
             temp_node->y_cordinate = back_right_y;
@@ -478,8 +502,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1: %f %f %f )\n",back_right_x,back_right_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -498,8 +522,7 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
         }
     }else{
         if(!occupied_points.hasValue(back_right_x,back_right_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",back_right_x,back_right_y,z_cordinate);
-            //return;
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(back_right_x,back_right_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
@@ -507,7 +530,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
             }
-            ////printf("( updated %f %f %f )\n",back_right_x,back_right_y,z_cordinate);
         }
     }
 
@@ -516,13 +538,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(right_x,right_y,z_cordinate)){
         if(!occupied_points.hasValue(right_x,right_y,z_cordinate)){
-            
-            // std::cout << right_x <<endl;
-            // while(current_node!= NULL){
-            // printf("Return on = %f %f %f )\n",current_node->x_cordinate,current_node->y_cordinate,current_node->z_cordinate);
-            //     current_node = current_node->predecessor;
-            // }
-            // return;
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = right_x;
             temp_node->y_cordinate = right_y;
@@ -530,8 +545,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1 : %f %f %f )\n",right_x,right_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -545,21 +560,18 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             // int traversable = checkSquareCondition(right_x,right_y,z_cordinate,0.5);
             // if(traversable){
                 node_queue.push(temp_node);
-                //printf("( %f %f %f )\n",right_x,right_y,z_cordinate);
             // }
         }
     }else{
         if(!occupied_points.hasValue(right_x,right_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",right_x,right_y,z_cordinate);
-            //return;
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(right_x,right_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
                 available_node->path_cost = current_node->path_cost + 1;
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
-            }
-            ////printf("( updated %f %f %f )\n",right_x,right_y,z_cordinate);  
+            }  
         }
     }
 
@@ -568,11 +580,6 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
     
     if(!found_nodes.hasValue(front_right_x,front_right_y,z_cordinate)){
         if(!occupied_points.hasValue(front_right_x,front_right_y,z_cordinate)){
-            float value = occupied_points.getValue(front_right_x,front_right_y,z_cordinate);
-            // printf("failed");
-           
-            //printf("%d\n",occupied_points.hasValue(front_right_x,front_right_y,z_cordinate));
-            //return;
             struct Graph_Node *temp_node = new Graph_Node;
             temp_node->x_cordinate = front_right_x;
             temp_node->y_cordinate = front_right_y;
@@ -580,8 +587,8 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             temp_node->path_cost = current_node->path_cost + 1;
             temp_node->predecessor = current_node;
             temp_node->priority = 0.0;
-            breadth_array[breadth_array_size] = temp_node;
-            breadth_array_size = breadth_array_size + 1;
+            breadth_array_free_cells[breadth_array_free_cells_size] = temp_node;
+            breadth_array_free_cells_size = breadth_array_free_cells_size + 1;
             printf("( Return on 1: %f %f %f )\n",front_right_x,front_right_y,z_cordinate);
         }else{
             struct Graph_Node *temp_node = new Graph_Node;
@@ -595,13 +602,11 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
             // int traversable = checkSquareCondition(front_right_x,front_right_y,z_cordinate,0.5);
             // if(traversable){
                 node_queue.push(temp_node);
-                //printf("( %f %f %f )\n",front_right_x,front_right_y,z_cordinate);
             // }
         }
     }else{
         if(!occupied_points.hasValue(front_right_x,front_right_y,z_cordinate)){
-            //printf("( Return on 2: %f %f %f )\n",front_right_x,front_right_y,z_cordinate);
-            //return;
+
         }else{
             struct Graph_Node *available_node = found_nodes.getValue(front_right_x,front_right_y,z_cordinate);
             if(available_node->path_cost>current_node->path_cost+1){
@@ -609,11 +614,10 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 available_node->predecessor = current_node;
                 available_node->priority = 0.0;
             }
-            ////printf("( updated %f %f %f )\n",front_right_x,front_right_y,z_cordinate);
         }
     }
 
-    if(breadth_array_size == 0){
+    if(breadth_array_free_cells_size == 0){
         if(node_queue.empty()){
             printf("kg");
             while(current_node!= NULL){
@@ -632,9 +636,9 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
         int minimum_position = 0;
         double minimum_path_cost = 100000000;
 
-        for (i=0; i < breadth_array_size;i++ ) {
+        for (i=0; i < breadth_array_free_cells_size;i++ ) {
             printf("for loop\n");
-            struct Graph_Node *temp_node = breadth_array[i];
+            struct Graph_Node *temp_node = breadth_array_free_cells[i];
             printf("breadth array\n");
             int temp_path_cost = temp_node->predecessor->path_cost + 1;
             printf("path cost\n");
@@ -642,15 +646,14 @@ void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cor
                 minimum_position = i;
                 minimum_path_cost = temp_path_cost;
             }
-            //delete breadth_array[i];
         }
 
-        struct Graph_Node *minimum_cost_node = breadth_array[minimum_position];
+        struct Graph_Node *minimum_cost_node = breadth_array_free_cells[minimum_position];
         
-        for (i=0; i < breadth_array_size;i++ ) {
-            delete breadth_array[i];
+        for (i=0; i < breadth_array_free_cells_size;i++ ) {
+            delete breadth_array_free_cells[i];
         }
-        breadth_array_size = 0;
+        breadth_array_free_cells_size = 0;
         printf("deleted\n");
         while(minimum_cost_node != NULL){
             printf("Node Traversed = %f %f %f )\n",minimum_cost_node->x_cordinate,minimum_cost_node->y_cordinate,minimum_cost_node->z_cordinate);
@@ -694,11 +697,8 @@ void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
         }
         
     }
-    //printf("%f\n",count);
     initialize_first_node(3.825000,1.625000,-0.025000);
-    // std::cout<<"VOLUME::::"<<v<<endl;
 }
-
 
 int main (int argc, char** argv) {
     ros::init (argc, argv, "cloud_sub");
