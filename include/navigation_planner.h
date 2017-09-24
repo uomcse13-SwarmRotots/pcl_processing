@@ -7,7 +7,7 @@
 #include <math.h>
 
 #include <octomap/OcTree.h>
-
+#include <boost/lexical_cast.hpp>
 #include <bitset>
 #include <map>
 #include <iostream>
@@ -172,6 +172,7 @@ class NavigationPlanner{
         void set_publish_end_point(double x_cordinate, double y_cordinate, double z_cordinate);
         void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cordinate, float box_dimension,struct Graph_Node *node);
         void initialize_first_node(float x_cordinate,float y_cordinate, float z_cordinate);
+        float get_rounded_point(float cordinate);
     public:
         /*
             methods

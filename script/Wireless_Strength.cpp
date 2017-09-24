@@ -1,7 +1,6 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <regex>
 
 using namespace std;
 
@@ -25,14 +24,9 @@ string GetStdoutFromCommand(string cmd) {
     return data;
 }
 
-
-
 int main (){
     string ls = GetStdoutFromCommand("nmcli dev wifi");
     // /^stop.*$/
-    // regex_matcher(ls);
-    // std::regex re("/^stop.*$/");
-    
     cout << "LS: " << ls << endl;
     return 0;
 }

@@ -21,6 +21,37 @@ void NavigationPlanner::clearVariables(){
     // node_queue = NULL;
 }
 
+float NavigationPlanner::get_rounded_point(float cordinate){
+    float mod_cordinate = 1000 * cordinate;
+    int mod_cordinate_int = (int)mod_cordinate;
+    int final_int;
+    float final_number;
+    std::string mod_cordinate_str = boost::lexical_cast<std::string>(mod_cordinate_int);
+    string last_characters = mod_cordinate_str.substr(mod_cordinate_str.length() - 2);
+    try {
+        int last_int = boost::lexical_cast<int>(last_characters);
+        
+        if(last_int == 25 | last_int == 75){
+            final_int = mod_cordinate_int;
+        }else if(last_int > 25 & last_int < 50){
+            final_int = mod_cordinate_int - (last_int - 25);
+        }else if((last_int >= 50 & last_int < 75)){
+            final_int = mod_cordinate_int + (75 - last_int);
+        }else if(last_int > 75 & last_int < 100){
+            final_int = mod_cordinate_int - (last_int - 75);
+        }else if(last_int >= 0 & last_int < 25){
+            final_int = mod_cordinate_int + (25 - last_int);
+        }
+
+        final_number= (float)final_int/1000;
+
+        // printf("%f\n",final_number);
+    } catch( boost::bad_lexical_cast const& ) {
+        // std::cout << "Error: input string was not valid" << std::endl;
+    }
+    return final_number;
+}
+
 /*
  * Function to check square condition (traversable/untraversable)
  * retunr value status
@@ -28,7 +59,6 @@ void NavigationPlanner::clearVariables(){
  *  0 -untraversable
  *  1 -traversable
  */
-
 
 int NavigationPlanner::checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate, float box_dimension){
     float start_x = x_cordinate - box_dimension/2;
@@ -544,9 +574,16 @@ void NavigationPlanner::initialize_first_node(float x_cordinate,float y_cordinat
 }
 
 int **NavigationPlanner::check_neighbourhood(const geometry_msgs::PoseStamped& pose, float box_dimension){
-    float x_cordinate = pose.pose.position.x;
-    float y_cordinate = pose.pose.position.y;
-    float z_cordinate = pose.pose.position.z;
+    float x_cordinate = round(get_rounded_point(pose.pose.position.x));
+    float y_cordinate = round(get_rounded_point(pose.pose.position.y));
+    float z_cordinate = round(get_rounded_point(pose.pose.position.z));
+
+    // float x_cordinate = 0.575000;
+    // float y_cordinate = -1.025000;
+    // float z_cordinate = 0.025000;
+
+      
+    printf("start cordinate %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
 
     int** array = 0;
     array = new int*[3];
@@ -619,9 +656,9 @@ void NavigationPlanner::retrieveDataFromOctomap(const octomap_msgs::OctomapConst
 
 void NavigationPlanner::neighbourhood_callback(const geometry_msgs::PoseStamped& pose){
     int **return_data = check_neighbourhood(pose,0.5);
-    int i=0,j=0;
-    for(i;i<3;i++){
-        for(j;j<3;j++){
+    int i,j;
+    for(i=0;i<3;i++){
+        for(j=0;j<3;j++){
             ROS_INFO("Point %d %d value = %d",i,j,return_data[i][j]);
         }
     }    
@@ -629,5 +666,5 @@ void NavigationPlanner::neighbourhood_callback(const geometry_msgs::PoseStamped&
 
 void NavigationPlanner::start(){
     subscriber_node = node_handle_.subscribe(topic_, 1000, &NavigationPlanner::retrieveDataFromOctomap,this);
-    ros::spin();
+    // ros::spin();
 }

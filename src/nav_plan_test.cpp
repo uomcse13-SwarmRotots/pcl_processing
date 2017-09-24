@@ -10,6 +10,7 @@ int main (int argc, char** argv) {
     
     NavigationPlanner* navigation_planner = new NavigationPlanner(node_handler,topic_octomap);
     navigation_planner->start();
+    ROS_INFO("PASSED");
     ros::NodeHandle simple_nh("move_base_simple");
     ros::Subscriber goal_sub = simple_nh.subscribe("goal",1,&NavigationPlanner::neighbourhood_callback,navigation_planner);
     
