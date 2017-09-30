@@ -35,19 +35,20 @@ def subscribe_to_point_cloud(point_cloud_data) :
     cloud_point_y = []
     cloud_point_z = []
     for point in point_cloud_iterator:
-        x_coordinate = point[0]
-        y_coordinate = point[1]
-        z_coordinate = point[2]
-    
-        cloud_point_x.append(point[0])
-        cloud_point_y.append(point[1])
-        cloud_point_z.append(point[2])
+        # x_coordinate = point[0]
+        # y_coordinate = point[1]
+        # z_coordinate = point[2]
+        print point[0],point[1],point[2]
+        # cloud_point_x.append(point[0])
+        # cloud_point_y.append(point[1])
+        # cloud_point_z.append(point[2])
         count=count+1
+        print count
         # if (count > 100000):
         #     break
 
     # surface_identifier(cloud_point_x,cloud_point_y,cloud_point_z)
-    print count,frame_height*frame_width
+    print count
     
 
     # fig = plt.figure()
@@ -126,10 +127,42 @@ def surface_identifier(cloud_point_x,cloud_point_y,cloud_point_z):
 
 def listener():
     rospy.init_node('listener', anonymous=True)
-    rospy.Subscriber("/octomap_point_cloud_centers", PointCloud2, subscribe_to_point_cloud)
+    rospy.Subscriber("/depth_camera/depth_camera/depth/points", PointCloud2, subscribe_to_point_cloud)
     rospy.spin()
 
 if __name__ == '__main__':
     listener()
 
+
+# import rospy
+# import sys
+# import time
+# import os
+# from nav_msgs.msg import OccupancyGrid
+# from nav_msgs.msg import MapMetaData
+# from std_msgs.msg import String
+# from std_msgs.msg import Float64
+# from std_msgs.msg import Int8MultiArray
+
+# def callback(OccupancyGrid):
+#     mapdata.data = OccupancyGrid.data
+#     # pub = rospy.Publisher('mapprob', Int8MultiArray, queue_size=10)
+#     # pub.publish(mapdata)
+
+
+
+# def somethingCool():
+#     global mapdata
+#     mapdata = Int8MultiArray()
+#     rospy.init_node('test_name', anonymous=False)
+#     rospy.Subscriber("/projected_map", OccupancyGrid, callback)
+#     rospy.loginfo(mapdata)
+#     rospy.spin()
+
+
+# if __name__ == '__main__':
+#     try:
+#         somethingCool()
+#      except rospy.ROSInterruptException:
+#         pass
 

@@ -38,6 +38,7 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <octomap_msgs/GetOctomap.h>
 #include <algorithm>
+#include <stack>
 
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
@@ -148,6 +149,7 @@ class NavigationPlanner{
         Array3D<float> checked_points;
         
         queue<struct Graph_Node*> node_queue;
+        queue<struct Graph_Node*> breadth_empty_queue;
         
         int breadth_array_free_cells_size;
         float starting_cordinate_x;
@@ -166,22 +168,24 @@ class NavigationPlanner{
         inline float round(float val);
         void clearVariables();
         int checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate, float box_dimension);
-        void convert_odom_angle_to_radians(float yaw_in_radians);
-        double get_turning_angle_between_two_points(double start_x_cordinate,double start_y_cordinate, double end_x_cordinate, double end_y_cordinate);
-        double calculate_weight_to_the_point(struct Graph_Node *temp_current_node);
-        void set_publish_end_point(double x_cordinate, double y_cordinate, double z_cordinate);
+        void convertOdomAngleToRadians(float yaw_in_radians);
+        float getTurningAngleBetweenTwoPoints(float start_x_cordinate,float start_y_cordinate, float end_x_cordinate, float end_y_cordinate);
+        float calculateWeightToThePoint(struct Graph_Node *temp_current_node,float yaw_in_radians);
+        void publishEndPoint(float x_cordinate, float y_cordinate, float z_cordinate);
         void getAdjecentSquareCentroids(float x_cordinate,float y_cordinate, float z_cordinate, float box_dimension,struct Graph_Node *node);
-        void initialize_first_node(float x_cordinate,float y_cordinate, float z_cordinate);
-        float get_rounded_point(float cordinate);
+        void initializeFrstNode(float x_cordinate,float y_cordinate, float z_cordinate,float box_dimension);
+        float getRoundedPoint(float cordinate);
+        struct Graph_Node *getBreadthFirstSearchNodes(float x_cordinate, float y_cordinate, float z_cordinate,float box_dimension);
+        int pathTraversalCost(struct Graph_Node *graph_node);
     public:
         /*
             methods
         */
         void retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg);
-        int **check_neighbourhood(const geometry_msgs::PoseStamped& pose, float box_dimension);
+        int **checkNeighbourhood(const geometry_msgs::PoseStamped& pose, float box_dimension);
         void start();
         NavigationPlanner(ros::NodeHandle &nh, std::string topic);
-        void neighbourhood_callback(const geometry_msgs::PoseStamped& pose);
+        void neighbourhoodCallback(const geometry_msgs::PoseStamped& pose);
         ~NavigationPlanner();
 };
 #endif

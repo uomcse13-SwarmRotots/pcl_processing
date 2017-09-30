@@ -26,7 +26,7 @@ float get_rounded_point(float cordinate){
 
         float final_number = (float)final_int/1000;
 
-        printf("%f\n",final_number);
+        // printf("%f\n",final_number);
     } catch( boost::bad_lexical_cast const& ) {
         // std::cout << "Error: input string was not valid" << std::endl;
     }
