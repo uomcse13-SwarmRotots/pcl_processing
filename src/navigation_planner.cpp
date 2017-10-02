@@ -1,7 +1,5 @@
 #include "navigation_planner.h"
 
-OcTree* octree;
-
 NavigationPlanner::NavigationPlanner(ros::NodeHandle &nh, std::string topic){
     node_handle_ = nh;
     topic_ = topic;
@@ -967,71 +965,70 @@ int **NavigationPlanner::checkNeighbourhood(const geometry_msgs::PoseStamped& po
 
 void NavigationPlanner::retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
     printf("start");
-    AbstractOcTree* tree = msgToMap(*msg);
-    // OcTree* octree = dynamic_cast<OcTree*>(tree); 
-    octree = dynamic_cast<OcTree*>(tree); 
+    AbstractOcTree* tree = fullMsgToMap(*msg);
+    OcTree* octree = dynamic_cast<OcTree*>(tree); 
 
-    // int count = 0;
-    // int count1 = 0;
-    // for(OcTree::tree_iterator it = octree->begin_tree(),end=octree->end_tree(); it!= end; ++it){
-    //     float point_x = round(getRoundedPoint(it.getX()));
-    //     float point_y = round(getRoundedPoint(it.getY()));
-    //     float point_z = round(getRoundedPoint(it.getZ()));
-    //     // float point_x = it.getX();
-    //     // float point_y = it.getY();
-    //     // float point_z = it.getZ();
+    int count = 0;
+    int count1 = 0;
+    for(OcTree::tree_iterator it = octree->begin_tree(),end=octree->end_tree(); it!= end; ++it){
+        // float point_x = round(getRoundedPoint(it.getX()));
+        // float point_y = round(getRoundedPoint(it.getY()));
+        // float point_z = round(getRoundedPoint(it.getZ()));
+        float point_x = it.getX();
+        float point_y = it.getY();
+        float point_z = it.getZ();
 
-    //     if(it.isLeaf()){
-    //         printf("(  %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
+        // if(it.isLeaf()){
+            printf("(  %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
             
-    //         if(it->getValue()>0){
-    //             // if(!occupied_points.hasValue(point_x,point_y,point_z)){
-    //             occupied_points.setValue(point_x,point_y,point_z,1);
-    //             count = count+1;   
-    //             // }
-    //             // printf("( Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
+            if(it->getValue()>0){
+                // if(!occupied_points.hasValue(point_x,point_y,point_z)){
+                occupied_points.setValue(point_x,point_y,point_z,1);
+                count = count+1;   
+                // }
+                // printf("( Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
             
-    //         }else{
-    //             // if(!occupied_points.hasValue(point_x,point_y,point_z)){
-    //             occupied_points.setValue(point_x,point_y,point_z,0);  
-    //             count1++;  
-    //             // }
+            }else{
+                // if(!occupied_points.hasValue(point_x,point_y,point_z)){
+                occupied_points.setValue(point_x,point_y,point_z,0);  
+                count1++;  
+                // }
                 
-    //             // if(point_x==1.325000f & point_y== 2.525000f){
-    //             //     printf("( Free Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
-    //             // }    
-    //         }
-    //     }
+                // if(point_x==1.325000f & point_y== 2.525000f){
+                //     printf("( Free Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
+                // }    
+            }
+        // }
        
-    //     // if(it->getValue()>0){
-    //     //     // if(!occupied_points.hasValue(point_x,point_y,point_z)){
-    //     //     occupied_points.setValue(point_x,point_y,point_z,1);    
-    //     //     // }
-    //     //     // printf("( Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
+        // if(it->getValue()>0){
+        //     // if(!occupied_points.hasValue(point_x,point_y,point_z)){
+        //     occupied_points.setValue(point_x,point_y,point_z,1);    
+        //     // }
+        //     // printf("( Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
            
-    //     // }else{
-    //     //     // if(!occupied_points.hasValue(point_x,point_y,point_z)){
-    //     //     occupied_points.setValue(point_x,point_y,point_z,0);    
-    //     //     // }
+        // }else{
+        //     // if(!occupied_points.hasValue(point_x,point_y,point_z)){
+        //     occupied_points.setValue(point_x,point_y,point_z,0);    
+        //     // }
             
-    //     //     // if(point_x==1.325000f & point_y== 2.525000f){
-    //     //     //     printf("( Free Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
-    //     //     // }
+        //     // if(point_x==1.325000f & point_y== 2.525000f){
+        //     //     printf("( Free Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
+        //     // }
             
-    //     // }
-    //     if(point_x==1.325000f & point_y== 2.525000f){
-    //         // printf("( Free Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
-    //     }
+        // }
+        if(point_x==1.325000f & point_y== 2.525000f){
+            // printf("( Free Octree Nodes : %f %f %f %f)\n",point_x,point_y,point_z,it->getValue());
+        }
         
+    }
+    printf("count occupied %d\n",count);
+    printf("count free %d\n",count1);
+    // struct Graph_Node *best_node = getBreadthFirstSearchNodes(4.475000,2.225000,-0.025000,0.500000);
+    // while(best_node != NULL){
+    //     printf("Traversing Points = %f %f %f\n", best_node->x_cordinate, best_node->y_cordinate, best_node->z_cordinate);
+    //     best_node = best_node->predecessor;
     // }
-    // printf("count occupied %d\n",count);
-    // printf("count free %d\n",count1);
-    // // struct Graph_Node *best_node = getBreadthFirstSearchNodes(4.475000,2.225000,-0.025000,0.500000);
-    // // while(best_node != NULL){
-    // //     printf("Traversing Points = %f %f %f\n", best_node->x_cordinate, best_node->y_cordinate, best_node->z_cordinate);
-    // //     best_node = best_node->predecessor;
-    // // }
-    // // initializeFrstNode(0.675000,4.725000,0.025000);
+    // initializeFrstNode(0.675000,4.725000,0.025000);
 }
 
 void NavigationPlanner::neighbourhoodCallback(const geometry_msgs::PoseStamped& pose){
@@ -1043,65 +1040,42 @@ void NavigationPlanner::neighbourhoodCallback(const geometry_msgs::PoseStamped& 
     //     }
     // }
     // ROS_INFO("%f",pose.pose.position.x);
-    // float x_cordinate = round(getRoundedPoint(pose.pose.position.x));
-    // ROS_INFO("%f",x_cordinate);
-    // float y_cordinate = round(getRoundedPoint(pose.pose.position.y));
-    // ROS_INFO("%f",y_cordinate);
-    // float z_cordinate = round(getRoundedPoint(pose.pose.position.z));
-    // ROS_INFO("%f",z_cordinate);
+    float x_cordinate = round(getRoundedPoint(pose.pose.position.x));
+    ROS_INFO("%f",x_cordinate);
+    float y_cordinate = round(getRoundedPoint(pose.pose.position.y));
+    ROS_INFO("%f",y_cordinate);
+    float z_cordinate = round(getRoundedPoint(pose.pose.position.z));
+    ROS_INFO("%f",z_cordinate);
     
     
-    //     // ROS_INFO("occupied lower");
-    //     // if(occupied_points.hasValue(x_cordinate,y_cordinate,0.025000)){
-    //     //     ROS_INFO("occupied both");
-    //     // }else{
-    //     //     ROS_INFO("occupied lower");
-    //     // }
-    //     // if(occupied_points.hasValue(x_cordinate,y_cordinate,0.075000)){
-    //     //     ROS_INFO("occupied third");
-    //     // }else{
-    //     //     ROS_INFO("not occupied third");
-    //     // }
-    // int i = 0;
-    // x_cordinate = round(x_cordinate);
-    // y_cordinate = round(y_cordinate);
-    // for(i=0; i<10; i++){
-    //     float z_cordinate = round(-0.025000+0.050000*i);
-    //     ROS_INFO("%f %f %f",x_cordinate,y_cordinate,z_cordinate);
-    //     if(occupied_points.hasValue(x_cordinate,y_cordinate,z_cordinate)){
-    //         if(occupied_points.getValue(x_cordinate,y_cordinate,z_cordinate)==1){
-    //             ROS_INFO("occupied_point %f %f %f",x_cordinate,y_cordinate,z_cordinate);
-    //         }else{
-    //             ROS_INFO("free_point %f %f %f",x_cordinate,y_cordinate,z_cordinate);
-    //         }
-    //     }else{
-    //         ROS_INFO("undiscovered  %f %f %f",x_cordinate,y_cordinate,z_cordinate);
-    //     }
-    // }
-
-        point3d min;
-        min.x() = -1;
-        min.y() = -1;
-        min.z() = -1;
-
-        point3d max;
-        max.x() = 1;
-        max.z() = 1;
-        max.y() = 1;
-
-        double resolution = 0.05;
-
-        for(double ix = min.x(); ix <max.x(); ix+=resolution){
-            for(double iy = min.y(); ix <max.y(); iy+=resolution){
-                for(double iz = min.z(); iz <max.x(); iz+=resolution){
-                    if(!octree->search(ix,iy,iz)){
-                         ROS_INFO("unknown");
-                    }else{
-                         ROS_INFO("known");
-                    }
-                }
+        // ROS_INFO("occupied lower");
+        // if(occupied_points.hasValue(x_cordinate,y_cordinate,0.025000)){
+        //     ROS_INFO("occupied both");
+        // }else{
+        //     ROS_INFO("occupied lower");
+        // }
+        // if(occupied_points.hasValue(x_cordinate,y_cordinate,0.075000)){
+        //     ROS_INFO("occupied third");
+        // }else{
+        //     ROS_INFO("not occupied third");
+        // }
+    int i = 0;
+    x_cordinate = round(x_cordinate);
+    y_cordinate = round(y_cordinate);
+    for(i=0; i<10; i++){
+        float z_cordinate = round(-0.025000+0.050000*i);
+        ROS_INFO("%f %f %f",x_cordinate,y_cordinate,z_cordinate);
+        if(occupied_points.hasValue(x_cordinate,y_cordinate,z_cordinate)){
+            if(occupied_points.getValue(x_cordinate,y_cordinate,z_cordinate)==1){
+                ROS_INFO("occupied_point %f %f %f",x_cordinate,y_cordinate,z_cordinate);
+            }else{
+                ROS_INFO("free_point %f %f %f",x_cordinate,y_cordinate,z_cordinate);
             }
+        }else{
+            ROS_INFO("undiscovered  %f %f %f",x_cordinate,y_cordinate,z_cordinate);
         }
+    }
+
    
     // initializeFrstNode(x_cordinate,y_cordinate,z_cordinate,0.5);
 

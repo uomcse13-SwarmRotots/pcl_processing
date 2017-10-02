@@ -1,28 +1,40 @@
-#include "ros/ros.h"
-#include "std_msgs/String.h"
-#include <sstream>
-#include "nav_msgs/OccupancyGrid.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
 
-void mapConvert(const nav_msgs::OccupancyGrid::ConstPtr& msg)
-{
-  ROS_INFO("I heard: [%d]",msg->info.width);
-//   map_pub.publish(msg->info.width);
+#include <cstdlib>
+
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/console/parse.h>
+#include <pcl/filters/crop_box.h>
+
+void processCuboid(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, pcl::PointCloud<pcl::PointXYZ>* cloudIn){
+    Eigen::Vector4f minPoint;
+    minPoint[0]=minX;
+    minPoint[1]=minY;
+    minPoint[2]=minZ;
+
+    Eigen::Vector4f maxPoint;
+    minPoint[0]=maxX;
+    minPoint[1]=maxY;
+    minPoint[2]=maxZ;
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOut (new pcl::PointCloud<pcl::PointXYZ>);
+
+    pcl::CropBox<PointT> cropFilter;
+    cropFilter.setInputCloud (cloudIn);
+    cropFilter.setMin(minPoint);
+    cropFilter.setMax(maxPoint);
+
+    cropFilter.filter (*cloudOut); 
+
+
 }
 
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "map_converter");
-  ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("/projected_map", 1000, mapConvert);
-//   ros::Publisher map_pub = n.advertise<int>("mapconverted", 1000);
-  ros::Rate loop_rate(10);
 
- int count = 0;
-  while (ros::ok())
-  {
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
-  ros::spin();
-  return 0;
+int main(){
+    return 0;
 }
