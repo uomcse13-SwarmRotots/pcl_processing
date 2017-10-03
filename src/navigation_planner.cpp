@@ -1,5 +1,11 @@
 #include "navigation_planner.h"
 
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
+pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+
+
 NavigationPlanner::NavigationPlanner(ros::NodeHandle &nh, std::string topic){
     node_handle_ = nh;
     topic_ = topic;
@@ -908,59 +914,49 @@ void NavigationPlanner::initializeFrstNode(float x_cordinate,float y_cordinate, 
 }
 
 int **NavigationPlanner::checkNeighbourhood(const geometry_msgs::PoseStamped& pose, float box_dimension){
-    float x_cordinate = round(getRoundedPoint(pose.pose.position.x));
-    float y_cordinate = round(getRoundedPoint(pose.pose.position.y));
-    float z_cordinate = round(getRoundedPoint(pose.pose.position.z));
+    float x_cordinate = pose.pose.position.x;
+    float y_cordinate = pose.pose.position.y;
+    float z_cordinate = pose.pose.position.z;
 
-    // float x_cordinate = 0.575000;
-    // float y_cordinate = -1.025000;
-    // float z_cordinate = 0.025000;
+    float resolution = box_dimension;
+    x_min = x_cordinate - resolution;
+    x_max = x_cordinate + resolution;
+    y_min = y_cordinate - resolution;
+    y_max = y_cordinate + resolution;
+    z_min = z_cordinate - resolution;
+    z_max = z_cordinate + resolution;
 
-      
-    printf("start cordinate %f %f %f \n",x_cordinate,y_cordinate,z_cordinate);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
 
-    int** array = 0;
-    array = new int*[3];
-    for (int h = 0; h < 3; h++){
-        array[h] = new int[3];
-        for (int w = 0; w < 3; w++){
-                array[h][w] = 0;
-        }
-    }
+    pcl::PassThrough<pcl::PointXYZ> pass;
+    pass.setInputCloud (cloud);
+    pass.setFilterFieldName ("z");
+    pass.setFilterLimits (z_min, z_max);in
+    pass.filter (*cloud_filtered);
 
-    float front_x = round(x_cordinate + box_dimension);
-    float front_y = round(y_cordinate);
-    array[1][2] = checkSquareCondition(front_x,front_y,z_cordinate,box_dimension);
+    pass.setInputCloud (cloud_filtered);
+    pass.setFilterFieldName ("y");
+    pass.setFilterLimits (y_min, y_max);
+    pass.filter (*cloud_filtered);
 
-    float front_left_x = round(x_cordinate + box_dimension);
-    float front_left_y = round(y_cordinate + box_dimension);
-    array[0][2] = checkSquareCondition(front_left_x,front_left_y,z_cordinate,box_dimension);
+    pass.setInputCloud (cloud_filtered);
+    pass.setFilterFieldName ("x");
+    pass.setFilterLimits (x_min, x_max);
+    pass.filter (*cloud_filtered);
 
-    float left_x = round(x_cordinate);
-    float left_y = round(y_cordinate + box_dimension);
-    array[0][1] = checkSquareCondition(left_x,left_y,z_cordinate,box_dimension);
-    
-    float back_left_x = round(x_cordinate - box_dimension);
-    float back_left_y = round(y_cordinate + box_dimension);
-    array[0][0] = checkSquareCondition(back_left_x,back_left_y,z_cordinate,box_dimension);
-    
-    float back_x = round(x_cordinate - box_dimension);
-    float back_y = round(y_cordinate);
-    array[1][0] = checkSquareCondition(back_x,back_y,z_cordinate,box_dimension);
-    
-    float back_right_x = round(x_cordinate - box_dimension);
-    float back_right_y = round(y_cordinate - box_dimension);
-    array[2][0] = checkSquareCondition(back_right_x,back_right_y,z_cordinate,box_dimension);
-    
-    float right_x = round(x_cordinate);
-    float right_y = round(y_cordinate - box_dimension);
-    array[2][1] = checkSquareCondition(right_x,right_y,z_cordinate,box_dimension);
-    
-    float front_right_x = round(x_cordinate + box_dimension);
-    float front_right_y = round(y_cordinate - box_dimension);
-    array[2][2] = checkSquareCondition(front_right_x,front_right_y,z_cordinate,box_dimension);
-    
-    return array;
+    int ok_count;
+    int occupied_count;
+
+
+    for(pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud_filtered->iterator; it!= cloud_filtered->end(); it++){
+        if(it->z > z_cordinate + 0.05){
+            occupied_count++;
+        }else{
+            ok_count++;
+        }   
+        //cout << it->x << ", " << it->y << ", " << it->z << endl;
+    } 
+    cout << ok_count << ", " << occupied_count << endl;
 }
 
 void NavigationPlanner::retrieveDataFromOctomap(const octomap_msgs::OctomapConstPtr& msg){
@@ -1131,7 +1127,24 @@ struct Graph_Node *NavigationPlanner::getBreadthFirstSearchNodes(float x_cordina
     }
 }
 
+
+void cloud_call_back(const PointCloud::ConstPtr& msg){
+    cloud->width  = msg->width;
+    cloud->height = msg->height;
+    cloud->points.resize (cloud->width * cloud->height);
+
+    int i=0;
+    BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points){
+        printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
+        cloud->points[i].x = pt.x;
+        cloud->points[i].y = pt.y;
+        cloud->points[i].z = pt.z;
+        i++;
+    }
+}
+
 void NavigationPlanner::start(){
-    subscriber_node = node_handle_.subscribe(topic_, 1000, &NavigationPlanner::retrieveDataFromOctomap,this);
+    // subscriber_node = node_handle_.subscribe(topic_, 1000, &NavigationPlanner::retrieveDataFromOctomap,this);
+    subscriber_node = node_handle_.subscribe(topic_, 1000, cloud_call_back);
     // ros::spin();
 }
