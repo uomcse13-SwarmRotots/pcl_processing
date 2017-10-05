@@ -5,16 +5,29 @@
 #include <string>
 #include <sstream>
 #include <math.h>
-
-#include <octomap/OcTree.h>
-#include <boost/lexical_cast.hpp>
-#include <bitset>
-#include <map>
-#include <iostream>
 #include <ros/ros.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <boost/foreach.hpp>
+#include <iostream>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/segmentation/progressive_morphological_filter.h>
+#include <pcl/filters/voxel_grid.h>
+// #include <pcl/features/normal_3d.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/conditional_euclidean_clustering.h>
+#include <octomap/OcTree.h>
+#include <boost/lexical_cast.hpp>
+#include <bitset>
+#include <map>
 #include <tf/transform_datatypes.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/tf.h>
@@ -24,22 +37,17 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <queue>
-
 #include <octomap_msgs/conversions.h>
 #include <octomap/octomap.h>
 #include <fstream>
-
 #include <pcl/point_cloud.h>
 #include <pcl/octree/octree_search.h>
-
-#include <iostream>
 #include <vector>
 #include <ctime>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <octomap_msgs/GetOctomap.h>
 #include <algorithm>
 #include <stack>
-
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/tuple/tuple_io.hpp>
@@ -48,7 +56,7 @@
 #include<octomap/OcTreeBase.h>
 
 const float  PI_F=3.14159265358979f;
-
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 /*
     namespace initialization
 */
@@ -177,6 +185,9 @@ class NavigationPlanner{
         float getRoundedPoint(float cordinate);
         struct Graph_Node *getBreadthFirstSearchNodes(float x_cordinate, float y_cordinate, float z_cordinate,float box_dimension);
         int pathTraversalCost(struct Graph_Node *graph_node);
+        void clusterObjects(pcl::PointCloud<pcl::PointXYZ>::Ptr& object_cloud);
+        void  groundNonGroundExtraction(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_cube);
+        void planerCoefficientApproximation(pcl::PointCloud<pcl::PointXYZ>::Ptr& plane_cloud);
     public:
         /*
             methods
@@ -186,6 +197,8 @@ class NavigationPlanner{
         void start();
         NavigationPlanner(ros::NodeHandle &nh, std::string topic);
         void neighbourhoodCallback(const geometry_msgs::PoseStamped& pose);
+        void segmentBoundingCube(const geometry_msgs::PoseStamped& pose);
+        void cloudCallback(const PointCloud::ConstPtr& msg);
         ~NavigationPlanner();
 };
 #endif
