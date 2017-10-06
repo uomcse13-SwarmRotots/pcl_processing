@@ -359,6 +359,8 @@ int main(int argc, char** argv){
     point3d translation;
     if(argc == 7 || argc == 10){
         translation = point3d(atof(argv[4]),atof(argv[5]),atof(argv[6]));
+    }else{
+        translation = point3d(0,0,0);
     }
 
     if(argc == 10){
@@ -369,6 +371,7 @@ int main(int argc, char** argv){
         roll = 0;
         pitch = 0;
         yaw = 0;
+        // yaw = 90;
     }
 
     Pose6D pose(translation.x(),translation.y(),translation.z(),roll,pitch,yaw);

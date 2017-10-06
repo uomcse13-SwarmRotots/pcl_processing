@@ -173,7 +173,7 @@ class NavigationPlanner{
         /*
             methods
         */
-        inline float round(float val);
+        // inline float round(float val);
         void clearVariables();
         int checkSquareCondition(float x_cordinate, float y_cordinate, float z_cordinate, float box_dimension);
         void convertOdomAngleToRadians(float yaw_in_radians);
@@ -186,8 +186,10 @@ class NavigationPlanner{
         struct Graph_Node *getBreadthFirstSearchNodes(float x_cordinate, float y_cordinate, float z_cordinate,float box_dimension);
         int pathTraversalCost(struct Graph_Node *graph_node);
         void clusterObjects(pcl::PointCloud<pcl::PointXYZ>::Ptr& object_cloud);
-        void  groundNonGroundExtraction(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_cube);
+        bool  groundNonGroundExtraction(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_cube);
         void planerCoefficientApproximation(pcl::PointCloud<pcl::PointXYZ>::Ptr& plane_cloud);
+        int segmentBoundingCube(float x_cordinate, float y_cordinate, float z_cordinate);
+        struct Graph_Node* breadthFirstSearch(float x_cordinate,float y_cordinate,float z_cordinate);
     public:
         /*
             methods
@@ -197,7 +199,7 @@ class NavigationPlanner{
         void start();
         NavigationPlanner(ros::NodeHandle &nh, std::string topic);
         void neighbourhoodCallback(const geometry_msgs::PoseStamped& pose);
-        void segmentBoundingCube(const geometry_msgs::PoseStamped& pose);
+        void startTraversal(const geometry_msgs::PoseStamped& pose);
         void cloudCallback(const PointCloud::ConstPtr& msg);
         ~NavigationPlanner();
 };
