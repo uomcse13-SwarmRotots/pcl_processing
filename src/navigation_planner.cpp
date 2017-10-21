@@ -1,6 +1,302 @@
 #include "navigation_planner.h"
+#include <pcl/filters/crop_hull.h>
+#include <pcl/surface/convex_hull.h>
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+
+void calculateConvexHull(vector<pcl::PointXYZ> point_vector,int point_type){
+    pcl::CropHull<pcl::PointXYZ> cropHullFilter;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr hullCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr hullPoints(new pcl::PointCloud<pcl::PointXYZ>);
+    std::vector<pcl::Vertices> hullPolygons;
+    vector<pcl::PointXYZ>::iterator it;
+    for(it = point_vector.begin(); it != point_vector.end(); it++){
+        hullCloud->push_back(*it);
+        printf("count\n");
+    }
+
+    // setup hull filter
+    pcl::ConvexHull<pcl::PointXYZ> cHull;
+    cHull.setInputCloud(hullCloud);
+    cHull.reconstruct(*hullPoints, hullPolygons);
+
+    cropHullFilter.setHullIndices(hullPolygons);
+    cropHullFilter.setHullCloud(hullPoints);
+    cropHullFilter.setDim(2); // if you uncomment this, it will work
+    cropHullFilter.setCropOutside(true); // this will remove points inside the hull
+
+  //filter points
+    cropHullFilter.setInputCloud(cloud);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    cropHullFilter.filter(*filtered_cloud);
+
+    std::string file_name1="filtered";
+    file_name1 = file_name1 + boost::lexical_cast<std::string>(point_type);
+    file_name1 = file_name1+".pcd";
+
+    std::string file_name2="hullPoints";
+    file_name2 = file_name2 + boost::lexical_cast<std::string>(point_type);
+    file_name2 = file_name2+".pcd";
+
+    std::string file_name3="cloud";
+    file_name3 = file_name3 + boost::lexical_cast<std::string>(point_type);
+    file_name3 = file_name3+".pcd";
+
+    pcl::io::savePCDFile(file_name1, *filtered_cloud, true);
+    pcl::io::savePCDFile(file_name2, *hullPoints,true);
+    pcl::io::savePCDFile(file_name3, *cloud,true);
+
+}
+
+void getConvexHullIndices(float x_cordinate, float y_cordinate, float z_cordinate, int point_type, float box_dimension){
+    vector<pcl::PointXYZ> point_vector; 
+    if(point_type==2){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate - 2*box_dimension;
+        point1.y=y_cordinate;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+        
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate - box_dimension;
+        point2.y=y_cordinate - box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate + box_dimension;
+        point3.y=y_cordinate - box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate + box_dimension;
+        point4.y=y_cordinate + box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+
+        pcl::PointXYZ point5;
+        point5.x=x_cordinate;
+        point5.y=y_cordinate + 2*box_dimension;
+        point5.z=z_cordinate;
+        point_vector.push_back(point5);
+
+        pcl::PointXYZ point6;
+        point6.x=x_cordinate - 2*box_dimension;;
+        point6.y=y_cordinate + 2*box_dimension;;
+        point6.z=z_cordinate;
+        point_vector.push_back(point6);
+    }else if(point_type==1){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate - box_dimension;
+        point1.y=y_cordinate - box_dimension;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate + box_dimension;
+        point2.y=y_cordinate - box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate + box_dimension;
+        point3.y=y_cordinate + 2*box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate - box_dimension;
+        point4.y=y_cordinate + 2*box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+    }else if(point_type==3){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate + box_dimension;
+        point1.y=y_cordinate + box_dimension;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate - 2*box_dimension;
+        point2.y=y_cordinate + box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate - 2*box_dimension;
+        point3.y=y_cordinate - box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate + box_dimension;
+        point4.y=y_cordinate - box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+    }else if(point_type==4){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate + box_dimension;
+        point1.y=y_cordinate + box_dimension;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+        
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate - box_dimension;
+        point2.y=y_cordinate + box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate - 2*box_dimension;
+        point3.y=y_cordinate;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate - 2*box_dimension;
+        point4.y=y_cordinate - 2*box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+
+        pcl::PointXYZ point5;
+        point5.x=x_cordinate;
+        point5.y=y_cordinate - 2*box_dimension;
+        point5.z=z_cordinate;
+        point_vector.push_back(point5);
+
+        pcl::PointXYZ point6;
+        point6.x=x_cordinate + box_dimension;;
+        point6.y=y_cordinate - box_dimension;;
+        point6.z=z_cordinate;
+        point_vector.push_back(point6);
+    }else if(point_type==5){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate - box_dimension;
+        point1.y=y_cordinate + box_dimension;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate - box_dimension;
+        point2.y=y_cordinate - 2*box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate + box_dimension;
+        point3.y=y_cordinate - 2*box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate + box_dimension;
+        point4.y=y_cordinate + box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+    }else if(point_type==6){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate + box_dimension;
+        point1.y=y_cordinate + box_dimension;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+        
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate - box_dimension;
+        point2.y=y_cordinate + box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate - box_dimension;
+        point3.y=y_cordinate - box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate;
+        point4.y=y_cordinate - 2*box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+
+        pcl::PointXYZ point5;
+        point5.x=x_cordinate + 2*box_dimension;
+        point5.y=y_cordinate - 2*box_dimension;
+        point5.z=z_cordinate;
+        point_vector.push_back(point5);
+
+        pcl::PointXYZ point6;
+        point6.x=x_cordinate + 2*box_dimension;
+        point6.y=y_cordinate;
+        point6.z=z_cordinate;
+        point_vector.push_back(point6);
+    }else if(point_type==7){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate - box_dimension;
+        point1.y=y_cordinate + box_dimension;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate - box_dimension;
+        point2.y=y_cordinate - box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate + 2*box_dimension;
+        point3.y=y_cordinate - box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate + 2*box_dimension;
+        point4.y=y_cordinate + box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+    }else if(point_type==8){
+        pcl::PointXYZ point1;
+        point1.x=x_cordinate + 2*box_dimension;
+        point1.y=y_cordinate;
+        point1.z=z_cordinate;
+        point_vector.push_back(point1);
+        
+        pcl::PointXYZ point2;
+        point2.x=x_cordinate + 2*box_dimension;
+        point2.y=y_cordinate + 2*box_dimension;
+        point2.z=z_cordinate;
+        point_vector.push_back(point2);
+
+        pcl::PointXYZ point3;
+        point3.x=x_cordinate;
+        point3.y=y_cordinate + 2*box_dimension;
+        point3.z=z_cordinate;
+        point_vector.push_back(point3);
+
+        pcl::PointXYZ point4;
+        point4.x=x_cordinate - box_dimension;
+        point4.y=y_cordinate + box_dimension;
+        point4.z=z_cordinate;
+        point_vector.push_back(point4);
+
+        pcl::PointXYZ point5;
+        point5.x=x_cordinate - box_dimension;
+        point5.y=y_cordinate - box_dimension;
+        point5.z=z_cordinate;
+        point_vector.push_back(point5);
+
+        pcl::PointXYZ point6;
+        point6.x=x_cordinate - box_dimension;
+        point6.y=y_cordinate + box_dimension;
+        point6.z=z_cordinate;
+        point_vector.push_back(point6);
+    }
+
+    calculateConvexHull(point_vector,point_type);
+
+}
+
 
 void NavigationPlanner::planerCoefficientApproximation(pcl::PointCloud<pcl::PointXYZ>::Ptr& plane_cloud){
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
@@ -404,7 +700,15 @@ void NavigationPlanner::startTraversal(const geometry_msgs::PoseStamped& pose){
     float x_cordinate = pose.pose.position.x;
     float y_cordinate = pose.pose.position.y;
     float z_cordinate = pose.pose.position.z;
-    breadthFirstSearch(x_cordinate,y_cordinate,z_cordinate);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,1,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,2,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,3,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,4,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,5,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,6,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,7,0.5);
+    getConvexHullIndices(x_cordinate,y_cordinate,z_cordinate,8,0.5);
+    //breadthFirstSearch(x_cordinate,y_cordinate,z_cordinate);
 }
 
 
